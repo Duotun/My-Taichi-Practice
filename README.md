@@ -1,6 +1,7 @@
 # My-Taichi-Practice
 Learning and Practice with Taichi
 
+- Simple Rendering and Effects
 1. Ray Marching
 
 ![Ray](https://github.com/Duotun/My-Taichi-Practice/blob/main/Demos/rayMarching.gif)
