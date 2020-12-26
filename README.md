@@ -9,3 +9,6 @@ Learning and Practice with Taichi
   2. Curve Shape and Blue Effect
 
   ![Curve](https://github.com/Duotun/My-Taichi-Practice/blob/main/Demos/heart.gif)
+  
+ - Interactive Fluid Simulation. Refer to [Taichi Example Code](https://github.com/taichi-dev/taichi/blob/3050606b44a64e3e1070835b7bfe22eee39a00a1/examples/stable_fluid.py) and the Book: Fluid Simulation of Computer Graphics
+
