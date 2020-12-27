@@ -12,4 +12,4 @@ Learning and Practice with Taichi
   
  - 2D Interactive Fluid Simulation. Refer to [Taichi Example Code](https://github.com/taichi-dev/taichi/blob/3050606b44a64e3e1070835b7bfe22eee39a00a1/examples/stable_fluid.py) and the Book: *[Fluid Simulation of Computer Graphics](https://www.amazon.com/Simulation-Computer-Graphics-Robert-Bridson/dp/1568813260)*
  
-    ![Fluid](https://github.com/Duotun/My-Taichi-Practice/blob/main/Demos/Interactive%20Fluid.gif)
+    ![Fluid](https://github.com/Duotun/My-Taichi-Practice/blob/main/Demos/Interactive%20Fluid.gif) ![FluidCG](https://github.com/Duotun/My-Taichi-Practice/blob/main/Demos/Interactive_Fluid_cg.gif)
