@@ -3,6 +3,7 @@ import numpy as np
 from camera import Camera
 from ray import Ray
 import vector   #lots of utility functions
+from hittable import *  #import all related stuff
 
 ti.init(arch=ti.gpu)
 
