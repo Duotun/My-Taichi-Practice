@@ -23,3 +23,7 @@ def random_number():
 @ti.func
 def random_number_range(min, max):
     return ts.randRange(min, max);
+
+@ti.func
+def degrees_to_radians(degrees):
+    return degrees * math.pi / 180.0;

@@ -7,13 +7,16 @@ from hittable import *  #import all related stuff
 
 ti.init(arch=ti.gpu)
 
-# global variables
+# global variables, image parameters
 aspect_ratio = 16.0/9.0;
 image_width = 400;
 image_height = int(image_width/aspect_ratio);
 pixels = ti.Vector.field(3, dtype=ti.f32, shape = (image_width, image_height));
+
+#scene parameters
 cam = Camera();
-world = Sphere(ti.Vector([0.0, 0.0, -1.0]), 0.5);
+world = hittable_list();
+samples_per_pixel = 1;
 
 
 #test kernels, remember no field could be assigned in the kernels, they need to be allocated in the cpu side
@@ -33,24 +36,36 @@ def basic_image():
 @ti.kernel
 def render_image():
     for i, j in pixels:
-        u = float(i)/(image_width - 1);
-        v = float(j)/(image_height - 1);
-        ray = cam.get_ray(u, v);
-        is_hit, rec = world.hit(ray, 0, 10e8);   # a fake max value
-        if is_hit:
-            pixels[i, j] = 0.5*(rec.normal + vector.WHITE);
-        else:
-            pixels[i,j] = ray_color_background(ray);
+        pix_color = ti.Vector([0.0, 0.0, 0.0]);
+        for n in range(samples_per_pixel):
+            u = float(i + vector.random_number())/(image_width - 1);
+            v = float(j + vector.random_number())/(image_height - 1);
+            ray = cam.get_ray(u, v);
+            pix_color += ray_color_normal(ray);
+        pixels[i,j] = pix_color / samples_per_pixel;
+        
 
 #background_images
 @ti.func 
 def ray_color_background(ray):
     unit_dir = vector.unit_vector(ray.direction);
     t = 0.5 * (unit_dir[1]+1.0);
-    return (1.0 - t) * vector.WHITE + t * vector.BLUE;       
+    return (1.0 - t) * vector.WHITE + t * vector.BLUE;  
+
+@ti.func
+def ray_color_normal(ray):
+    is_hit, rec = world.hit(ray, 0, 10e8);   # a fake max value
+    tmp_color = ti.Vector([0.0, 0.0, 0.0]);
+    if is_hit:
+        tmp_color = 0.5*(rec.normal + vector.WHITE);
+    else:
+        tmp_color = ray_color_background(ray);     
+    return tmp_color;
 
 #define the main function
 def main():
+    #prepare the 3D world
+    world.add(Sphere(ti.Vector([0.0, 0.0, -1.0]), 0.5));
     render_image();
     ti.tools.imwrite(pixels.to_numpy(), 'out.png');
     
