@@ -13,6 +13,8 @@ image_width = 400;
 image_height = int(image_width/aspect_ratio);
 pixels = ti.Vector.field(3, dtype=ti.f32, shape = (image_width, image_height));
 cam = Camera();
+world = Sphere(ti.Vector([0.0, 0.0, -1.0]), 0.5);
+
 
 #test kernels, remember no field could be assigned in the kernels, they need to be allocated in the cpu side
 @ti.kernel
@@ -34,7 +36,11 @@ def render_image():
         u = float(i)/(image_width - 1);
         v = float(j)/(image_height - 1);
         ray = cam.get_ray(u, v);
-        pixels[i,j] = ray_color_background(ray);
+        is_hit, rec = world.hit(ray, 0, 10e8);   # a fake max value
+        if is_hit:
+            pixels[i, j] = 0.5*(rec.normal + vector.WHITE);
+        else:
+            pixels[i,j] = ray_color_background(ray);
 
 #background_images
 @ti.func 

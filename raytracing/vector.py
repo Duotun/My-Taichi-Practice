@@ -14,4 +14,12 @@ def unit_vector(v):
     v_n = v;
     return  v_n.normalized();
 
-#sampline functions
+#sample & random functions
+
+@ti.func
+def random_number():    
+    return ts.rand();
+
+@ti.func
+def random_number_range(min, max):
+    return ts.randRange(min, max);

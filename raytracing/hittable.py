@@ -8,6 +8,13 @@ hit_record = ti.types.struct(
 )
 
 
+@ti.func
+def set_face_normal(ray, outward_normal):
+    frontface = ray.direction.dot(outward_normal) <0.0;
+    if frontface == False:
+        outward_normal = -1.0 * outward_normal;
+    return outward_normal 
+
 @ti.data_oriented
 class hittable:
     def __init__(self):
@@ -27,13 +34,49 @@ class Sphere (hittable):
     @ti.func
     def hit(self, ray, t_min, t_max):
         is_hit = False;
-        is_frontface = False;
-        rec = hit_record.field(shape=());
+        rec = hit_record(pos = ti.Vector([0, 0, 0]), normal = ti.Vector([0, 0 ,0]), t = 0.0);   # initialize directly, can't go with field
         oc = ray.origin - self.center;
         a = ray.direction.dot(ray.direction);
-        b = 2.0 * oc.dot(ray.direciton);
+        half_b = oc.dot(ray.direction);
         c = oc.dot(oc) - self.radius * self.radius;
-        discreminant = b*b - 4*a*c;
-        
+        discriminant = half_b* half_b - a*c;
+        is_hit = discriminant >=0.0;
+        root = -1.0;
+        if is_hit:
+            sqrtd = discriminant **0.5;
+            root = (-half_b - sqrtd)/a;
+            if root < t_min or root > t_max:
+                root = (-half_b + sqrtd)/a;
+                if root >= t_min and root <=t_max:
+                    is_hit = True;
+        #update the hit record information
+        if is_hit:
+            rec.t = root;
+            rec.pos = ray.at(root);
+            rec.normal = (rec.pos - self.center) / self.radius;
+            rec.normal = set_face_normal(ray, (rec.pos - self.center) / self.radius);
         return is_hit, rec 
-        
+
+
+# follow the code implementations from taichi course
+@ti.data_oriented
+class hittable_list(hittable):
+    def __init__(self):
+        self.objects = []   # use list to contain all objects in the world
+    def add(self, obj):
+        self.objects.append(obj);
+    def clear(self):
+        self.objects = []; 
+    
+    @ti.func
+    def hit(self, ray, t_min=0.001, t_max=10e8):
+        closest_t = t_max;
+        is_hitanything = False;
+        rec = hit_record(pos = ti.Vector([0, 0, 0]), normal = ti.Vector([0, 0 ,0]), t = 0.0);
+        for index in ti.static(range(len(self.objects))):
+            is_hittmp, rectmp = self.objects[index].hit(ray, t_min, closest_t);
+            if is_hittmp:
+                closest_t = rec.t;
+                is_hitanything = is_hittmp;
+                rec = rectmp;
+        return is_hitanything, rec;
