@@ -1,10 +1,14 @@
 from numpy import dtype
 import taichi as ti
 from ray import Ray
+import material
 
 vec3f = ti.types.vector(3, ti.f32);
+#hit_record also records object index 
 hit_record = ti.types.struct(
-    pos = vec3f, normal=vec3f, t = ti.f32, 
+    pos = vec3f, 
+    normal=vec3f, 
+    t = ti.f32,
 )
 
 
@@ -26,9 +30,10 @@ class hittable:
 
 @ti.data_oriented
 class Sphere (hittable):
-    def __init__(self, s_center, s_radius):
+    def __init__(self, s_center, s_radius, s_material):
         self.center = s_center;
         self.radius = s_radius;
+        self.material = s_material;
         
     #return the hit information
     @ti.func
@@ -38,24 +43,27 @@ class Sphere (hittable):
         oc = ray.origin - self.center;
         a = ray.direction.dot(ray.direction);
         half_b = oc.dot(ray.direction);
-        c = oc.dot(oc) - self.radius * self.radius;
+        c =  oc.dot(oc)  - self.radius * self.radius;
         discriminant = half_b* half_b - a*c;
-        is_hit = discriminant >=0.0;
-        root = -1.0;
-        if is_hit:
-            sqrtd = discriminant **0.5;
+        is_hit = False
+        root = 0.0;
+        if discriminant >= 0.0:
+            sqrtd = ti.sqrt(discriminant);
             root = (-half_b - sqrtd)/a;
+            #print("Root: ", root);
             if root < t_min or root > t_max:
                 root = (-half_b + sqrtd)/a;
-                if root >= t_min and root <=t_max:
+                if root >= t_min and root <=t_max:    # find the nearest t segments
                     is_hit = True;
+            else:
+                is_hit = True;
+       
         #update the hit record information
         if is_hit:
             rec.t = root;
             rec.pos = ray.at(root);
-            rec.normal = (rec.pos - self.center) / self.radius;
             rec.normal = set_face_normal(ray, (rec.pos - self.center) / self.radius);
-        return is_hit, rec 
+        return is_hit, rec, self.material;
 
 
 # follow the code implementations from taichi course
@@ -73,10 +81,12 @@ class hittable_list(hittable):
         closest_t = t_max;
         is_hitanything = False;
         rec = hit_record(pos = ti.Vector([0, 0, 0]), normal = ti.Vector([0, 0 ,0]), t = 0.0);
+        mat = material._Diffuse(color = vec3f(0.8, 0.8, 0.0), index=0.0, roughness=0.0, ior=0.0);
         for index in ti.static(range(len(self.objects))):
-            is_hittmp, rectmp = self.objects[index].hit(ray, t_min, closest_t);
+            is_hittmp, rectmp, tmpmat = self.objects[index].hit(ray, t_min, closest_t);
             if is_hittmp:
-                closest_t = rec.t;
+                closest_t = rectmp.t;
                 is_hitanything = is_hittmp;
                 rec = rectmp;
-        return is_hitanything, rec;
+                mat = tmpmat;
+        return is_hitanything, rec, mat;

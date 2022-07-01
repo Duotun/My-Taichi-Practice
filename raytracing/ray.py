@@ -2,17 +2,14 @@ import taichi as ti
 import vector
 #use class -> data-oriented
 
-@ti.data_oriented
+
+#utilize struct_class to construc the taichi type in the taichi function
+@ti.struct_class
 class Ray:
-    def __init__(self):
-        self.origin = ti.Vector.field(3, dtype = ti.f32);
-        self.direction = ti.Vector.field(3, dtype = ti.f32);
-    
-    def __init__(self, org, dir):
-        self.origin = org;
-        self.direction = dir.normalized();
+    origin: vector.vec3f;
+    direction: vector.vec3f;
     
     @ti.func  
     def at(self, t):
         return self.origin + t* self.direction;
-
+    

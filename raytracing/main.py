@@ -4,6 +4,7 @@ from camera import Camera
 from ray import Ray
 import vector   #lots of utility functions
 from hittable import *  #import all related stuff
+import material
 
 ti.init(arch=ti.gpu)
 
@@ -16,7 +17,8 @@ pixels = ti.Vector.field(3, dtype=ti.f32, shape = (image_width, image_height));
 #scene parameters
 cam = Camera();
 world = hittable_list();
-samples_per_pixel = 1;
+samples_per_pixel = 100;
+max_depth = 50;
 
 
 #test kernels, remember no field could be assigned in the kernels, they need to be allocated in the cpu side
@@ -32,7 +34,8 @@ def basic_image():
         pixels[i, j][0] = float(i)/(image_width-1);
         pixels[i, j][1] = float(j)/(image_height-1);
         pixels[i, j][2] = 0.25;
- #rendering
+
+#rendering
 @ti.kernel
 def render_image():
     for i, j in pixels:
@@ -41,8 +44,10 @@ def render_image():
             u = float(i + vector.random_number())/(image_width - 1);
             v = float(j + vector.random_number())/(image_height - 1);
             ray = cam.get_ray(u, v);
-            pix_color += ray_color_normal(ray);
-        pixels[i,j] = pix_color / samples_per_pixel;
+            pix_color += ray_color(ray, max_depth);
+            #pix_color += ray_color_normal(ray);
+        # perform the gamma correction in the end (1/2)
+        pixels[i,j] = ti.sqrt(pix_color / samples_per_pixel);
         
 
 #background_images
@@ -54,7 +59,7 @@ def ray_color_background(ray):
 
 @ti.func
 def ray_color_normal(ray):
-    is_hit, rec = world.hit(ray, 0, 10e8);   # a fake max value
+    is_hit, rec = world.hit(ray, 0.001, 10e8);   # a fake max value
     tmp_color = ti.Vector([0.0, 0.0, 0.0]);
     if is_hit:
         tmp_color = 0.5*(rec.normal + vector.WHITE);
@@ -62,10 +67,29 @@ def ray_color_normal(ray):
         tmp_color = ray_color_background(ray);     
     return tmp_color;
 
+@ti.func
+def ray_color(ray, depth):
+    tmp_color = ti.Vector([0.0, 0.0, 0.0]); #return black if the max depth reaches
+    attenuation_color = ti.Vector([1.0, 1.0, 1.0]);
+    for n in range(depth):
+        is_hit, rec, mat = world.hit(ray, 0.0001, 10e8);   # a fake max value
+        if is_hit:
+            is_scatter, out_dir, changed_color = mat.scatter(ray.direction, rec);
+            if is_scatter == True:
+                ray =  Ray(origin = rec.pos, direction= out_dir);
+                attenuation_color *= changed_color;
+            else:
+                tmp_color *=0.0;
+                break;
+        else:
+            tmp_color = ray_color_background(ray) * attenuation_color;     
+    return tmp_color;
+
 #define the main function
 def main():
     #prepare the 3D world
-    world.add(Sphere(ti.Vector([0.0, 0.0, -1.0]), 0.5));
+    world.add(Sphere(ti.Vector([0.0, 0.0, -1.0]), 0.5,material._Diffuse(color = vec3f(0.7, 0.3, 0.3), index=0.0, roughness=0.0, ior=0.0)));
+    world.add(Sphere(ti.Vector([0.0, -100.5, -1.0]), 100, material._Diffuse(color =vec3f(0.8, 0.8, 0.0), index=0.0, roughness=0.0, ior=0.0)));
     render_image();
     ti.tools.imwrite(pixels.to_numpy(), 'out.png');
     
