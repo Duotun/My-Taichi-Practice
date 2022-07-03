@@ -58,6 +58,16 @@ def random_hemisphere(normal):
         in_unit_sphere = -in_unit_sphere;
     return in_unit_sphere;
 
+@ti.func
+def random_in_unit_disk():
+    p = vec3f(random_number_range(-1, 1), random_number_range(-1,1), 0.0);
+    while True:
+        if p.norm_sqr() < 1.0:
+            break;
+        p[0] = random_number_range(-1, 1);
+        p[1] = random_number_range(-1, 1);
+    return p;
+
 #don't reflect is near to the zero surface
 @ti.func
 def near_zero(vec_e):

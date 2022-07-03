@@ -9,13 +9,16 @@ import material
 ti.init(arch=ti.gpu)
 
 # global variables, image parameters
-aspect_ratio = 16.0/9.0;
+cam_aspect_ratio = 16.0/9.0;
 image_width = 400;
-image_height = int(image_width/aspect_ratio);
+image_height = int(image_width/cam_aspect_ratio);
 pixels = ti.Vector.field(3, dtype=ti.f32, shape = (image_width, image_height));
 
 #scene parameters
-cam = Camera();
+look_from =  vec3f(3, 3, 2);
+look_at = vec3f(0, 0, -1);
+focus_dist_in = (look_from - look_at).norm();
+cam = Camera(look_from, look_at, vec3f(0, 1, 0), 20.0, aspect_ratio = cam_aspect_ratio, aperture=2.0, focus_dist= focus_dist_in);
 world = hittable_list();
 samples_per_pixel = 100;
 max_depth = 50;
@@ -69,11 +72,11 @@ def ray_color_normal(ray):
 
 @ti.func
 def ray_color(ray, depth):
-    tmp_color = ti.Vector([0.0, 0.0, 0.0]); #return black if the max depth reaches
+    tmp_color = ti.Vector([0.0, 0.0, 0.0]);  #return black if the max depth reaches
     attenuation_color = ti.Vector([1.0, 1.0, 1.0]);
     for n in range(depth):
-        is_hit, rec, mat = world.hit(ray, 0.0001, 10e8);   # a fake max value
-        if is_hit:
+        is_hit, rec, mat = world.hit(ray, 0.0001, 10e8);  
+        if is_hit == True:
             is_scatter, out_dir, changed_color = mat.scatter(ray.direction, rec);
             if is_scatter == True:
                 ray =  Ray(origin = rec.pos, direction= out_dir);
@@ -86,10 +89,23 @@ def ray_color(ray, depth):
     return tmp_color;
 
 #define the main function
+#matindex = 0 - diffuse, matindex = 1 - metal
 def main():
     #prepare the 3D world
-    world.add(Sphere(ti.Vector([0.0, 0.0, -1.0]), 0.5,material._Diffuse(color = vec3f(0.7, 0.3, 0.3), index=0.0, roughness=0.0, ior=0.0)));
-    world.add(Sphere(ti.Vector([0.0, -100.5, -1.0]), 100, material._Diffuse(color =vec3f(0.8, 0.8, 0.0), index=0.0, roughness=0.0, ior=0.0)));
+    material_ground = material._Material(color = vec3f(0.8, 0.8, 0.0), matindex = 0, roughness=0.0, ior =0.0);
+    material_center = material._Material(color =vec3f(0.1, 0.2, 0.5), matindex =0, roughness=0.0, ior=0.0);  #diffuse
+    
+    material_left = material._Material(color = vec3f(0.8, 0.8, 0.8), matindex =2, roughness=0.0, ior=1.5);  # dielectric
+    material_right = material._Material(color = vec3f(0.8, 0.6, 0.2), matindex =1, roughness=0.0, ior=0.0);  #metal
+    
+    world.add(Sphere(ti.Vector([0.0, 0.0, -1.0]), 0.5, material_center));
+    #world.add(Sphere(ti.Vector([0.0, 0.0, -1.0]), 0.5, material_left));
+    world.add(Sphere(ti.Vector([0.0, -100.5, -1.0]), 100, material_ground));
+    world.add(Sphere(ti.Vector([-1.0, 0.0, -1.0]), 0.5, material_left));
+    world.add(Sphere(ti.Vector([-1.0, 0.0, -1.0]), -0.4, material_left));
+    world.add(Sphere(ti.Vector([1.0, 0.0, -1.0]), 0.5, material_right));
+    
+    #print(type(world.objects[0]))
     render_image();
     ti.tools.imwrite(pixels.to_numpy(), 'out.png');
     
