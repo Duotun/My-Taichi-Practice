@@ -23,7 +23,6 @@ def reflectance(cosine, idx):
 
 # I am defining a unified class struct for material 
 # the scattering are different from material index, 0 -diffuse, 1 - metal, 2 - dielectric
-
 @ti.struct_class
 class _Material():
     color: vec3f;
@@ -83,13 +82,6 @@ class _Material():
         
         return True, out_dir, attenuation_color;
         
-
-@ti.struct_class
-class _Dielectric():
-    color: vec3f;
-    index: ti.f32;
-    roughness: ti.f32;
-    ior: ti.f32;
 
 
 
