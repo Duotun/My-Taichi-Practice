@@ -21,6 +21,7 @@ def unit_vector(v):
 def random_number():    
     return ts.rand();
 
+
 @ti.func
 def random_number_range(min, max):
     return ts.randRange(min, max);
