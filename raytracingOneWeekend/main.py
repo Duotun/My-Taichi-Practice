@@ -8,23 +8,25 @@ import material
 import time
 import random
 
-ti.init(arch=ti.gpu, kernel_profiler=True)
+#device_memory_fraction=0.1
+ti.init(arch=ti.gpu, kernel_profiler=True, device_memory_fraction=0.4)   # make sure enough memory allocated
 
+# 3/2, 1200 is for the raytracingoneweekend
+# 1/1, 800 is for the raytracingtherestoflife
 # global variables, image parameters, I may change later..... to fit for the python functions
-cam_aspect_ratio = 3.0/2.0;
-image_width = 1200;
+cam_aspect_ratio = 1.0;
+image_width = 800;
 image_height = int(image_width/cam_aspect_ratio);
 pixels = ti.Vector.field(3, dtype=ti.f32, shape = (image_width, image_height));  #hmm, yes this guy
 
 #scene parameters
 look_from = vec3f(13, 2, 3);
 look_at = vec3f(0, 0, 0);
-focus_dist_in = 10.
+focus_dist_in = 10.0
 cam = Camera(look_from, look_at, vec3f(0, 1, 0), 20.0, aspect_ratio = cam_aspect_ratio, aperture=0.1, focus_dist= focus_dist_in);
 world = hittable_list();
 samples_per_pixel = 100;
 max_depth = 50;
-
 
 #test kernels, remember no field could be assigned in the kernels, they need to be allocated in the cpu side
 @ti.kernel
@@ -43,7 +45,7 @@ def basic_image():
 #rendering
 @ti.kernel
 def render_image():
-    #ti.loop_config(parallelize=8, block_dim=128)
+    ti.loop_config(parallelize=8, block_dim=128)
     for i, j in pixels:
         pix_color = ti.Vector([0.0, 0.0, 0.0]);
         for n in range(samples_per_pixel):
@@ -118,8 +120,8 @@ def random_scene():
     mat1 = material._Material(color = vec3f(0.8, 0.8, 0.8), matindex =2, roughness=0.0, ior=1.5);  # dielectric
     mat2 = material._Material(color = vec3f(0.5, 0.5, 0.5), matindex = 0, roughness=0.0, ior = 0.0);  # diffuse
     mat3 = material._Material(color = vec3f(0.7, 0.6, 0.5), matindex = 1, roughness =0.0, ior =0.0);  # metal
-    for a in range(-2, 2):
-        for b in range(-2, 2):
+    for a in range(-8, 8):
+        for b in range(-8, 8):
             choose_mat = random.random();
             center = vec3f(a+0.9*random.random(), 0.2, b+0.9*random.random());
             mat = material._Material(color = vec3f(0.7, 0.6, 0.5), matindex = 1, roughness =0.0, ior =0.0);
@@ -143,8 +145,64 @@ def random_scene():
     vup = vec3f(0.0, 1.0, 0.0);
     dist_to_focus = 10.0;
     aperture = 0.1;
-
     cam = Camera(look_from, look_at, vup, 20, cam_aspect_ratio, aperture, dist_to_focus);
+
+@ti.kernel
+def Render_Pass():
+    for i, j in pixels:
+        u = float(i + vector.random_number())/(image_width - 1);
+        v = float(j + vector.random_number())/(image_height - 1);
+        ray = cam.get_ray(u, v);
+        # perform the gamma correction in the end (1/2)
+        pixels[i,j] += ray_color(ray, max_depth); 
+
+def get_buffer(samples):
+    return (pixels.to_numpy()/ samples)**0.5;
+
+
+def cornell_BoxScene():
+    global image_width
+    global image_height
+    global samples_per_pixel
+    global max_depth
+    global cam 
+    global world
+
+    samples_per_pixel = 500;
+    max_depth = 50;
+
+    #add objects
+    mat_wall_1 = material._Material(color = vec3f(0.8, 0.8, 0.8), matindex = 0, roughness=0.0, ior = 0.0);
+    mat_wall_2 = material._Material(color = vec3f(0.8, 0.8, 0.8), matindex = 0, roughness=0.0, ior = 0.0);
+    mat_wall_3 = material._Material(color = vec3f(0.8, 0.8, 0.8), matindex = 0, roughness=0.0, ior = 0.0);
+    mat_wall_4 = material._Material(color = vec3f(0.6, 0.0, 0.0), matindex = 0, roughness=0.0, ior = 0.0);
+    mat_wall_5 = material._Material(color = vec3f(0.0, 0.6, 0.0), matindex = 0, roughness=0.0, ior = 0.0);
+
+    #add ground, ceiling, back, right left
+    world.add(Sphere(vec3f(0, -100.5, -1), 100.0, mat_wall_1));
+    world.add(Sphere(vec3f(0, 102.5, -1), 100.0, mat_wall_2));
+    world.add(Sphere(vec3f(0, 1, 101), 100.0, mat_wall_3));
+    world.add(Sphere(vec3f(-101.5,0, -1), 100.0, mat_wall_4));
+    world.add(Sphere(vec3f(101.5, 0, -1), 100.0, mat_wall_5));
+
+    #add four balls
+    mat_ball_1 = material._Material(color = vec3f(0.8, 0.3, 0.3), matindex = 0, roughness=0.0, ior = 0.0);   #diffuse
+    mat_ball_2 = material._Material(color = vec3f(0.6, 0.8, 0.8), matindex = 1, roughness=0.0, ior = 0.0);    #metal
+    mat_ball_3 = material._Material(color = vec3f(1.0, 1.0, 1.0), matindex = 2, roughness=0.0, ior = 0.0);   #dielectric
+    mat_ball_4 = material._Material(color = vec3f(0.8, 0.6, 0.2), matindex = 1, roughness=0.0, ior = 0.0);  #metal
+
+    world.add(Sphere(vec3f(0, -0.2, -1.5), 0.3, mat_ball_1))
+    world.add(Sphere(vec3f(-0.8, 0.2, -1), 0.7, mat_ball_2))
+    world.add(Sphere(vec3f(0.7, 0, -0.5), 0.5, mat_ball_3))
+    world.add(Sphere(vec3f(0.6, -0.3, -2.0), 0.2, mat_ball_4))
+    #camera
+    look_from = vec3f(0.0, 1.0, -5.0);
+    look_at = vec3f(0.0, 1.0, -1.0);
+    vup = vec3f(0.0, 1.0, 0.0);
+    dist_to_focus = 1.0;
+    aperture = 0.1;
+
+    cam = Camera(look_from, look_at, vup, 60, cam_aspect_ratio, aperture, dist_to_focus);
 
 def main():
     #prepare the 3D world
@@ -155,11 +213,11 @@ def main():
     #material_right = material._Material(color = vec3f(0.8, 0.6, 0.2), matindex =1, roughness=0.0, ior=0.0);  #metal
 
     #world.add(Sphere(ti.Vector([0.0, 0.0, -1.0]), 0.5, material_center));
-    #orld.add(Sphere(ti.Vector([0.0, -100.5, -1.0]), 100, material_ground));
+    #world.add(Sphere(ti.Vector([0.0, -100.5, -1.0]), 100, material_ground));
     #world.add(Sphere(ti.Vector([-1.0, 0.0, -1.0]), 0.5, material_left));
     #world.add(Sphere(ti.Vector([-1.0, 0.0, -1.0]), -0.4, material_left));
     #world.add(Sphere(ti.Vector([1.0, 0.0, -1.0]), 0.5, material_right));
-    # --- test scene
+
 
     #ground_material = material._Material(color = vec3f(0.5, 0.5, 0.5), matindex = 0, roughness=0.0, ior = 0.0);
     #world.add(Sphere(ti.Vector([0, -1000.0, 0]), 1000, ground_material));
@@ -173,11 +231,31 @@ def main():
 
 
     # ----- final scene 
+    #random_scene();
+    #start_time = time.time();
+    #render_image();
+    #print("max_depth: ", max_depth);
+    #ti.tools.imwrite(pixels.to_numpy(), 'out.png');
+    #ti.profiler.print_kernel_profiler_info();
+    #print("--- Time Elapsed: --- %s seconds" %(time.time() - start_time));
+
+    # -- Render with Seriliazed Samples
     random_scene();
+    #cornell_BoxScene();
+    #gui = ti.GUI("Ray Tracing in One Weekend", res=(image_width, image_height));
     start_time = time.time();
-    render_image();
-    print("max_depth: ", max_depth);
-    ti.tools.imwrite(pixels.to_numpy(), 'out.png');
+    for i in range(samples_per_pixel):
+        Render_Pass();
+        
+    #    gui.set_image(get_buffer(samples_per_pixel));
+    #    gui.show();
+    
+    #perform the gamma correction in the end
+    pixel_colors = (pixels.to_numpy()/ samples_per_pixel)**0.5;
+    ti.tools.imwrite(pixel_colors, 'out_t.png');
+    #gui.set_image(pixel_colors);
+    #gui.show("out_t.png");
+
     ti.profiler.print_kernel_profiler_info();
     print("--- Time Elapsed: --- %s seconds" %(time.time() - start_time));
 
