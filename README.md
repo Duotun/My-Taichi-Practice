@@ -18,6 +18,7 @@ Learning and Practice with Taichi
 
 - Ray Tracing. Refer to [Raytracing in One Weekend](https://raytracing.github.io/books/RayTracingInOneWeekend.html) and [Taichi Graphics Course](https://github.com/taichiCourse01/taichi_ray_tracing)
   
+  1. Teasure Image Rendered with 196 Spheres. Rightnow my implementation can't support full 484 spheres as the raytracing tutorial did.
   ![Cover Image 14*14](https://github.com/Duotun/My-Taichi-Practice/blob/main/raytracingOneWeekend/out7m7.png)
   
 
