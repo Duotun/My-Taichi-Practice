@@ -14,3 +14,10 @@ Learning and Practice with Taichi
  
     <img src ="https://github.com/Duotun/My-Taichi-Practice/blob/main/Demos/Interactive%20Fluid.gif" height="40%" width="40%" style="float:left"> 
     <img src ="https://github.com/Duotun/My-Taichi-Practice/blob/main/Demos/Interactive_Fluid_cg.gif" height="40%" width="40%" style="float:left">
+
+  3. Ray Tracing
+  
+  ![Cover Image 14*14](https://github.com/Duotun/My-Taichi-Practice/blob/main/raytracingOneWeekend/out7m7.png)
+  
+  - Refer to [Raytracing in One Weekend](https://raytracing.github.io/books/RayTracingInOneWeekend.html) and [Taichi Graphics Course](https://github.com/taichiCourse01/taichi_ray_tracing)
+  
