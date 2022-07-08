@@ -50,9 +50,9 @@ class _Material():
     
     #well, seems only diffuse light in this ray tracing part
     @ti.func
-    def emit(self):  # u, v, point3     
-        emited_color = vec3f(0, 0, 0);
-        if self.matindex == 3:
+    def emit(self, rec):  # u, v, point3     
+        emited_color = vec3f(0, 0, 0);   # default black
+        if self.matindex == 3:   # and rec.frontface == False , flip......
             emited_color = self.color;
         return emited_color;
 

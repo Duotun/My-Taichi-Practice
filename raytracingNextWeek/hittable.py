@@ -174,3 +174,66 @@ class xy_rect(hittable):
                 rec.frontface, rec.normal = set_face_normal(ray, vec3f(0, 0, 1));
             
         return is_hit, rec, self.material;
+
+
+@ti.data_oriented
+class xz_rect(hittable):
+    def __init__(self, _x0, _x1, _z0, _z1, _k, _mat):
+        self.x0 = _x0;
+        self.x1 = _x1;
+        self.z0 = _z0;
+        self.z1 = _z1;
+        self.k = _k;
+        self.material = _mat;  
+    
+    #return the hit information
+    @ti.func
+    def hit(self, ray, t_min, t_max):
+        is_hit = True;
+        rec = hit_record(pos = ti.Vector([0, 0, 0]), normal = ti.Vector([0, 0 ,0]), t = 0.0, frontface = 0); 
+        t = (self.k - ray.origin[1]) / ray.direction[1];
+        if t <t_min or t>t_max:
+            is_hit = False;
+        else: 
+            x = ray.origin[0] + t * ray.direction[0];
+            z = ray.origin[2] + t * ray.direction[2];
+            if x < self.x0 or x> self.x1 or z<self.z0 or z > self.z1:
+                is_hit = False;
+            else:
+                rec.t =t;
+                rec.pos = ray.at(t);
+                rec.frontface, rec.normal = set_face_normal(ray, vec3f(0, 1, 0));
+            
+        return is_hit, rec, self.material;
+
+
+@ti.data_oriented
+class yz_rect(hittable):
+    def __init__(self, _y0, _y1, _z0, _z1, _k, _mat):
+        self.y0 = _y0;
+        self.y1 = _y1;
+        self.z0 = _z0;
+        self.z1 = _z1;
+        self.k = _k;
+        self.material = _mat;  
+
+    
+    #return the hit information
+    @ti.func
+    def hit(self, ray, t_min, t_max):
+        is_hit = True;
+        rec = hit_record(pos = ti.Vector([0, 0, 0]), normal = ti.Vector([0, 0 ,0]), t = 0.0, frontface = 0); 
+        t = (self.k - ray.origin[0]) / ray.direction[0];
+        if t <t_min or t>t_max:
+            is_hit = False;
+        else: 
+            y = ray.origin[1] + t * ray.direction[1];
+            z = ray.origin[2] + t * ray.direction[2];
+            if y < self.y0 or y> self.y1 or z<self.z0 or z > self.z1:
+                is_hit = False;
+            else:
+                rec.t =t;
+                rec.pos = ray.at(t);
+                rec.frontface, rec.normal = set_face_normal(ray, vec3f(1, 0, 0));
+            
+        return is_hit, rec, self.material;

@@ -16,7 +16,7 @@ ti.init(arch=ti.gpu, kernel_profiler=True, device_memory_fraction=0.4)
 cam_aspect_ratio = 16.0/9.0;
 image_width = 1200;
 image_height = int(image_width/cam_aspect_ratio);
-pixels = ti.Vector.field(3, dtype=ti.f32, shape = (image_width, image_height));
+pixels = ti.Vector.field(3, dtype=ti.f32, shape = (image_width, image_height));   # may changed with the later scene settings
 
 #scene parameters
 look_from = vec3f(13, 2, 3);
@@ -64,16 +64,15 @@ def ray_color(ray, depth, background):   #background is the passed in color
         is_hit, rec, mat = world.hit(ray, 0.001, 10e8);  
         if is_hit == True:
             is_scatter, out_dir, changed_color = mat.scatter(ray.direction, rec);
-            emitted_color = mat.emit();
+            emitted_color = mat.emit(rec);
             if is_scatter == True:
                 tm_in = ray.time();
                 ray =  Ray(origin = rec.pos, direction= out_dir, tm=tm_in);
-                attenuation_color *= changed_color;
+                attenuation_color = emitted_color + attenuation_color * changed_color;
             else:
-                tmp_color += emitted_color;
+                tmp_color = emitted_color * attenuation_color;
                 break;
         else:
-            #tmp_color = ray_color_background(ray) * attenuation_color;  
             tmp_color = ray_background(background) * attenuation_color;    #+= consider the emitted color
     return tmp_color;
 
@@ -85,9 +84,29 @@ def cornel_box_Scene():
     global max_depth
     global cam 
     global world 
+    global backgroundColor
+    global pixels 
 
     #Scene
-    
+    samples_per_pixel = 400;
+    max_depth = 50;
+    image_width = 600;  
+    cam_aspect_ratio = 1.0
+    image_height = int(image_width/cam_aspect_ratio);
+    pixels = ti.Vector.field(3, dtype=ti.f32, shape = (image_width, image_height));
+
+    mat_red = material._Material(color = vec3f(0.65, 0.05, 0.05), matindex = 0, roughness=0.0, ior = 0.0);
+    mat_white = material._Material(color = vec3f(0.73, 0.73, 0.73), matindex = 0, roughness=0.0, ior = 0.0);
+    mat_green = material._Material(color = vec3f(0.12, 0.45, 0.15), matindex = 0, roughness=0.0, ior = 0.0);
+    mat_light = material._Material(color = vec3f(15, 15, 15), matindex = 3, roughness=0.0, ior = 0.0);
+
+    world.add(yz_rect(0,555, 0, 555, 555, mat_green));
+    world.add(yz_rect(0,555, 0, 555, 0, mat_red));
+    world.add(xz_rect(213, 343, 227, 332, 554, mat_light));
+    world.add(xz_rect(0,555, 0, 555, 0, mat_white));
+    world.add(xz_rect(0,555, 0, 555, 555, mat_white));
+    world.add(xy_rect(0,555, 0, 555, 555, mat_white));
+
     #camera
     look_from = vec3f(278, 278, -800.0);
     look_at = vec3f(278, 278, 0.0);
@@ -105,13 +124,17 @@ def random_scene():
     global samples_per_pixel
     global max_depth
     global cam 
-    global world 
+    global world
+    global backgroundColor
+    global pixels 
 
-    #cam_aspect_ratio = 3.0/2.0;   or 16/9.0
-    #image_width = 1200;   or 400
-    #image_height = int(image_width/cam_aspect_ratio);
+    cam_aspect_ratio = 3.0/2.0; 
+    image_width = 1200;  
+    image_height = int(image_width/cam_aspect_ratio);
     samples_per_pixel = 100;
     max_depth = 50;
+    image_height = int(image_width/cam_aspect_ratio);
+    pixels = ti.Vector.field(3, dtype=ti.f32, shape = (image_width, image_height));
 
     #construct the world
     ground_material = material._Material(color = vec3f(0.5, 0.5, 0.5), matindex = 0, roughness=0.0, ior = 0.0);
@@ -164,15 +187,17 @@ def DiffuseLight_Scene():
     global cam 
     global world 
     global backgroundColor
+    global pixels
 
     image_width = 1200;  # or 400
     cam_aspect_ratio = 16.0/9.0;
     image_height = int(image_width/cam_aspect_ratio);
+    pixels = ti.Vector.field(3, dtype=ti.f32, shape = (image_width, image_height));
     samples_per_pixel = 400;
     max_depth = 30;
     backgroundColor = vec3f(0, 0, 0);
 
-    mat_diffuse = material._Material(color = vec3f(0.5, 0.5, 0.5), matindex = 0, roughness=0.0, ior = 0.0);
+    mat_diffuse = material._Material(color = vec3f(0.0, 0.5, 0.5), matindex = 0, roughness=0.0, ior = 0.0);
     mat_light = material._Material(color = vec3f(4, 4, 4), matindex = 3, roughness=0.0, ior = 0.0);
 
     world.add(Sphere(vec3f(0.0, -1000, 0.0), 1000.0, mat_diffuse));
@@ -205,7 +230,8 @@ def main():
     # -- Render with Seriliazed Samples
     #random_scene();
     #cornell_BoxScene();
-    DiffuseLight_Scene();
+    #DiffuseLight_Scene();
+    cornel_box_Scene();
     #gui = ti.GUI("Ray Tracing in One Weekend", res=(image_width, image_height));
     start_time = time.time();
     for i in range(samples_per_pixel):
