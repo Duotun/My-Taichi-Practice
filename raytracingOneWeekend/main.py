@@ -9,7 +9,7 @@ import time
 import random
 
 #device_memory_fraction=0.1
-ti.init(arch=ti.gpu, kernel_profiler=True, device_memory_fraction=0.2)   # make sure enough memory allocated
+ti.init(arch=ti.gpu, kernel_profiler=True, device_memory_fraction=0.8)   # make sure enough memory allocated
 
 # 3/2, 1200 is for the raytracingoneweekend
 # 1/1, 800 is for the raytracingtherestoflife
