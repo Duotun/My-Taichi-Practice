@@ -143,3 +143,34 @@ class Moving_Sphere(hittable):
             rec.pos = ray.at(root);
             rec.frontface, rec.normal = set_face_normal(ray, (rec.pos - self.center(ray.time())) / self.radius);
         return is_hit, rec, self.material;
+
+
+@ti.data_oriented
+class xy_rect(hittable):
+    def __init__(self, _x0, _x1, _y0, _y1, _k, _mat):
+        self.x0 = _x0;
+        self.x1 = _x1;
+        self.y0 = _y0;
+        self.y1 = _y1;
+        self.k = _k;
+        self.material = _mat;  
+
+    #return the hit information
+    @ti.func
+    def hit(self, ray, t_min, t_max):
+        is_hit = True;
+        rec = hit_record(pos = ti.Vector([0, 0, 0]), normal = ti.Vector([0, 0 ,0]), t = 0.0, frontface = 0); 
+        t = (self.k - ray.origin[2]) / ray.direction[2];
+        if t <t_min or t>t_max:
+            is_hit = False;
+        else: 
+            x = ray.origin[0] + t * ray.direction[0];
+            y = ray.origin[1] + t * ray.direction[1];
+            if x < self.x0 or x> self.x1 or y<self.y0 or y > self.y1:
+                is_hit = False;
+            else:
+                rec.t =t;
+                rec.pos = ray.at(t);
+                rec.frontface, rec.normal = set_face_normal(ray, vec3f(0, 0, 1));
+            
+        return is_hit, rec, self.material;

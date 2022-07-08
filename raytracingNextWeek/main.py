@@ -10,10 +10,11 @@ import random
 
 #for the cornell box scene, 600, 1.0
 # for the cover scene, 400, 16.0/9.0
+# I just add rectangles and lights and then go to the restoflife section
 ti.init(arch=ti.gpu, kernel_profiler=True, device_memory_fraction=0.4) 
 
 cam_aspect_ratio = 16.0/9.0;
-image_width = 400;
+image_width = 1200;
 image_height = int(image_width/cam_aspect_ratio);
 pixels = ti.Vector.field(3, dtype=ti.f32, shape = (image_width, image_height));
 
@@ -25,6 +26,8 @@ cam = Camera(look_from, look_at, vec3f(0, 1, 0), 20.0, aspect_ratio = cam_aspect
 world = hittable_list();
 samples_per_pixel = 100;
 max_depth = 50;
+
+backgroundColor = vec3f(0, 0, 0);
 
 #rendering
 @ti.kernel
@@ -49,24 +52,29 @@ def ray_color_background(ray):
     t = 0.5 * (unit_dir[1]+1.0);
     return (1.0 - t) * vector.WHITE + t * vector.BLUE;  
 
+@ti.func
+def ray_background(color):
+    return color;
 
 @ti.func
-def ray_color(ray, depth):
+def ray_color(ray, depth, background):   #background is the passed in color
     tmp_color = ti.Vector([0.0, 0.0, 0.0]);  #return black if the max depth reaches
     attenuation_color = ti.Vector([1.0, 1.0, 1.0]);
     for n in range(depth):
         is_hit, rec, mat = world.hit(ray, 0.001, 10e8);  
         if is_hit == True:
             is_scatter, out_dir, changed_color = mat.scatter(ray.direction, rec);
+            emitted_color = mat.emit();
             if is_scatter == True:
                 tm_in = ray.time();
                 ray =  Ray(origin = rec.pos, direction= out_dir, tm=tm_in);
                 attenuation_color *= changed_color;
             else:
-                tmp_color *=0.0;
+                tmp_color += emitted_color;
                 break;
         else:
-            tmp_color = ray_color_background(ray) * attenuation_color;   
+            #tmp_color = ray_color_background(ray) * attenuation_color;  
+            tmp_color = ray_background(background) * attenuation_color;    #+= consider the emitted color
     return tmp_color;
 
 
@@ -141,10 +149,45 @@ def random_scene():
     look_from = vec3f(13, 2, 3);
     look_at = vec3f(0.0, 0.0, 0.0);
     vup = vec3f(0.0, 1.0, 0.0);
-    dist_to_focus = 10.0;
+    dist_to_focus = 1.0;
     aperture = 0.1;
 
     cam = Camera(look_from, look_at, vup, 20, cam_aspect_ratio, aperture, dist_to_focus, 0.0, 1.0);
+
+
+def DiffuseLight_Scene():
+    global image_width
+    global image_height
+    global cam_aspect_ratio
+    global samples_per_pixel
+    global max_depth
+    global cam 
+    global world 
+    global backgroundColor
+
+    image_width = 1200;  # or 400
+    cam_aspect_ratio = 16.0/9.0;
+    image_height = int(image_width/cam_aspect_ratio);
+    samples_per_pixel = 400;
+    max_depth = 30;
+    backgroundColor = vec3f(0, 0, 0);
+
+    mat_diffuse = material._Material(color = vec3f(0.5, 0.5, 0.5), matindex = 0, roughness=0.0, ior = 0.0);
+    mat_light = material._Material(color = vec3f(4, 4, 4), matindex = 3, roughness=0.0, ior = 0.0);
+
+    world.add(Sphere(vec3f(0.0, -1000, 0.0), 1000.0, mat_diffuse));
+    world.add(Sphere(vec3f(0.0, 2, 0.0), 2, mat_diffuse));
+    world.add(xy_rect(3, 5, 1, 3, -2, mat_light));
+
+    #camera
+    look_from = vec3f(26, 3, 6);
+    look_at = vec3f(0.0, 2.0, 0.0);
+    vup = vec3f(0.0, 1.0, 0.0);
+    dist_to_focus = 1.0;
+    aperture = 0;
+
+    cam = Camera(look_from, look_at, vup, 20, cam_aspect_ratio, aperture, dist_to_focus, 0.0, 1.0);
+
 
 @ti.kernel
 def Render_Pass():
@@ -153,15 +196,16 @@ def Render_Pass():
         v = float(j + vector.random_number())/(image_height - 1);
         ray = cam.get_ray(u, v);
         # perform the gamma correction in the end (1/2)
-        pixels[i,j] += ray_color(ray, max_depth); 
+        pixels[i,j] += ray_color(ray, max_depth, background=backgroundColor); 
 
 def get_buffer(samples):
     return (pixels.to_numpy()/ samples)**0.5;
 
 def main():
     # -- Render with Seriliazed Samples
-    random_scene();
+    #random_scene();
     #cornell_BoxScene();
+    DiffuseLight_Scene();
     #gui = ti.GUI("Ray Tracing in One Weekend", res=(image_width, image_height));
     start_time = time.time();
     for i in range(samples_per_pixel):

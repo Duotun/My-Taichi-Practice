@@ -9,7 +9,7 @@ import time
 import random
 
 #device_memory_fraction=0.1
-ti.init(arch=ti.gpu, kernel_profiler=True, device_memory_fraction=0.4)   # make sure enough memory allocated
+ti.init(arch=ti.gpu, kernel_profiler=True, device_memory_fraction=0.2)   # make sure enough memory allocated
 
 # 3/2, 1200 is for the raytracingoneweekend
 # 1/1, 800 is for the raytracingtherestoflife
@@ -120,8 +120,8 @@ def random_scene():
     mat1 = material._Material(color = vec3f(0.8, 0.8, 0.8), matindex =2, roughness=0.0, ior=1.5);  # dielectric
     mat2 = material._Material(color = vec3f(0.5, 0.5, 0.5), matindex = 0, roughness=0.0, ior = 0.0);  # diffuse
     mat3 = material._Material(color = vec3f(0.7, 0.6, 0.5), matindex = 1, roughness =0.0, ior =0.0);  # metal
-    for a in range(-8, 8):
-        for b in range(-8, 8):
+    for a in range(-11, 11):
+        for b in range(-11, 11):
             choose_mat = random.random();
             center = vec3f(a+0.9*random.random(), 0.2, b+0.9*random.random());
             mat = material._Material(color = vec3f(0.7, 0.6, 0.5), matindex = 1, roughness =0.0, ior =0.0);
