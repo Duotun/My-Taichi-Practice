@@ -8,7 +8,7 @@ import time
 ti.init(arch=ti.gpu)
 #for bitonic sort, num of array must be power of 2
 
-N_arr =  8; #8192*128;
+N_arr =  8;   #8192*128;
 ti_arr = ti.field(dtype=ti.i32, shape=(N_arr, ));
 
 @ti.kernel
@@ -38,7 +38,8 @@ def generate_array(N):
 def compAndSwap(a, i, j, dir):
     if (dir == 1 and a[i] > a[j]) or (dir == 0 and a[i]< a[j]):
         a[i], a[j] = a[j], a[i]
- 
+
+#recursion method 
 def bitonicMerge(a, low, cnt, dir):
     if cnt >1:
         k = cnt//2;
@@ -53,7 +54,6 @@ def bitonicSort_CPU(a, low, cnt, dir):
         bitonicSort_CPU(a, low, k, 1); #increase
         bitonicSort_CPU(a, low+k, k, 0);  #descend
         bitonicMerge(a, low, cnt, dir);
-
 
 
 #iteration method, a big step (k) to sort and a small step (j) to merger
@@ -104,7 +104,7 @@ def bitonicSort_GPU(dir: int):
 def main():
     
     start_time = time.time();
-    #arr = [3, 7, 4, 8, 6, 2, 1, 5];
+    
     #cpu way
     arr = generate_array(8);    
     n = len(arr);
@@ -115,7 +115,6 @@ def main():
         print("%d "%arr[i], end= " ");
     
     #gpu way
-    
     #generate_array_taichi();
     #bitonicSort_GPU(0);
     #print_array_taichi();
