@@ -8,7 +8,7 @@ import time
 ti.init(arch=ti.gpu)
 #for bitonic sort, num of array must be power of 2
 
-N_arr = 8192*128;
+N_arr =  8; #8192*128;
 ti_arr = ti.field(dtype=ti.i32, shape=(N_arr, ));
 
 @ti.kernel
@@ -55,6 +55,22 @@ def bitonicSort_CPU(a, low, cnt, dir):
         bitonicMerge(a, low, cnt, dir);
 
 
+
+#iteration method, a big step (k) to sort and a small step (j) to merger
+def bitonicSort_CPU_iter(a, low, num, dir):
+    k = 2;
+    while k <= num:  # for sort
+        j= (k//2);
+        while j >0:  # for merge
+            iter = num//j;
+            low = 0;
+            for i in range(iter-1):   # for swap
+                for id in range(low, low+j):
+                    compAndSwap(a, id, id+j, dir);
+                low +=j;
+            j=j//2;
+        k*=2;   
+
 @ti.func
 def ti_swap(i, j):
     temp = ti_arr[i];
@@ -62,23 +78,27 @@ def ti_swap(i, j):
     ti_arr[j] = temp;
 
 @ti.kernel
-def bitonic_sort_step(j: int, k: int):
+def bitonic_sort_step(j: int, k: int, dir: int):
     for i in range(ti_arr.shape[0]):
         ixj = i^j;
         if ixj >i:   #dir control
             if (i&k) ==0:
-                if  ti_arr[i] > ti_arr[ixj]:   #ascending
+                if  (ti_arr[i] > ti_arr[ixj]) and dir==1:   #ascending
+                    ti_swap(i, ixj);
+                elif (ti_arr[i] <=ti_arr[ixj]) and dir == 0:
                     ti_swap(i, ixj);
             else:
-                if ti_arr[i] <ti_arr[ixj]:  #descending
+                if (ti_arr[i] <ti_arr[ixj]) and dir == 1:  #descending
                     ti_swap(i,ixj);
+                elif (ti_arr[i] >=ti_arr[ixj]) and dir == 0:
+                    ti_swap(i, ixj);
  
-def bitonicSort_GPU():
+def bitonicSort_GPU(dir: int):
     k = 2;
     while k <=N_arr:
         j= (k//2);
         while j >0:
-            bitonic_sort_step(j, k);
+            bitonic_sort_step(j, k, dir);
             j=j//2;
         k*=2;                  
 def main():
@@ -86,17 +106,18 @@ def main():
     start_time = time.time();
     #arr = [3, 7, 4, 8, 6, 2, 1, 5];
     #cpu way
-    arr = generate_array(8192*64);    
+    arr = generate_array(8);    
     n = len(arr);
-    dir = 1
-    bitonicSort_CPU(arr, 0, n, dir);
-    #for i in range(n):
-    #    print("%d "%arr[i], end= " ");
+    dir = 0;   # 1 - ascending, 0 - descending 
+    #bitonicSort_CPU(arr, 0, n, dir);
+    bitonicSort_CPU_iter(arr, 0, n, dir);
+    for i in range(n):
+        print("%d "%arr[i], end= " ");
     
     #gpu way
     
     #generate_array_taichi();
-    #bitonicSort_GPU();
+    #bitonicSort_GPU(0);
     #print_array_taichi();
     
     print("------time cost: %.6f s" %(time.time() - start_time));
