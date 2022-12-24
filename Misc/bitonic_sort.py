@@ -51,7 +51,7 @@ def bitonicMerge(a, low, cnt, dir):
 def bitonicSort_CPU(a, low, cnt, dir):
     if cnt >1:
         k = cnt//2;   #floor division
-        bitonicSort_CPU(a, low, k, 1); #increase
+        bitonicSort_CPU(a, low, k, 1); #increase first
         bitonicSort_CPU(a, low+k, k, 0);  #descend
         bitonicMerge(a, low, cnt, dir);
 
@@ -66,7 +66,10 @@ def bitonicSort_CPU_iter(a, low, num, dir):
             low = 0;
             for i in range(iter-1):   # for swap
                 for id in range(low, low+j):
-                    compAndSwap(a, id, id+j, dir);
+                    if (low//k)%2 == 0:   #ascend and then descend (merge)
+                        compAndSwap(a, id, id+j, dir);
+                    else:
+                        compAndSwap(a, id, id+j, 1-dir);
                 low +=j;
             j=j//2;
         k*=2;   
