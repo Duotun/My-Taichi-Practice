@@ -23,7 +23,7 @@ def reflectance(cosine, idx):
 
 # I am defining a unified class struct for material 
 # the scattering are different from material index, 0 -diffuse, 1 - metal, 2 - dielectric
-@ti.struct_class
+@ti.dataclass
 class _Material():
     color: vec3f;
     matindex: ti.i32;
@@ -43,7 +43,9 @@ class _Material():
             
         if self.matindex == 2: #dielectric
             is_scattered, out_dir, attenuation_color = self.scatter_dielectric(dir_in, rec);
-            
+        
+        if self.matindex == 3:  #emission
+            is_scattered = False;   
         return is_scattered, out_dir, attenuation_color;
     
     @ti.func 

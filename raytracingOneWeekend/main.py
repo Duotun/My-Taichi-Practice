@@ -168,7 +168,7 @@ def cornell_BoxScene():
     global cam 
     global world
 
-    samples_per_pixel = 500;
+    samples_per_pixel = 50;
     max_depth = 50;
 
     #add objects
@@ -177,6 +177,7 @@ def cornell_BoxScene():
     mat_wall_3 = material._Material(color = vec3f(0.8, 0.8, 0.8), matindex = 0, roughness=0.0, ior = 0.0);
     mat_wall_4 = material._Material(color = vec3f(0.6, 0.0, 0.0), matindex = 0, roughness=0.0, ior = 0.0);
     mat_wall_5 = material._Material(color = vec3f(0.0, 0.6, 0.0), matindex = 0, roughness=0.0, ior = 0.0);
+    mat_light = material._Material(color = vec3f(15, 15, 15), matindex = 3, roughness=0.0, ior = 0.0);
 
     #add ground, ceiling, back, right left
     world.add(Sphere(vec3f(0, -100.5, -1), 100.0, mat_wall_1));
@@ -191,10 +192,11 @@ def cornell_BoxScene():
     mat_ball_3 = material._Material(color = vec3f(1.0, 1.0, 1.0), matindex = 2, roughness=0.0, ior = 0.0);   #dielectric
     mat_ball_4 = material._Material(color = vec3f(0.8, 0.6, 0.2), matindex = 1, roughness=0.0, ior = 0.0);  #metal
 
-    world.add(Sphere(vec3f(0, -0.2, -1.5), 0.3, mat_ball_1))
-    world.add(Sphere(vec3f(-0.8, 0.2, -1), 0.7, mat_ball_2))
-    world.add(Sphere(vec3f(0.7, 0, -0.5), 0.5, mat_ball_3))
-    world.add(Sphere(vec3f(0.6, -0.3, -2.0), 0.2, mat_ball_4))
+    #world.add(Sphere(vec3f(0, -0.2, -1.5), 0.3, mat_ball_1))
+    #world.add(Sphere(vec3f(-0.8, 0.2, -1), 0.7, mat_ball_2))
+    #world.add(Sphere(vec3f(0.7, 0, -0.5), 0.5, mat_ball_3))
+    #world.add(Sphere(vec3f(0.6, -0.3, -2.0), 0.2, mat_ball_4))
+    
     #camera
     look_from = vec3f(0.0, 1.0, -5.0);
     look_at = vec3f(0.0, 1.0, -1.0);
@@ -240,8 +242,8 @@ def main():
     #print("--- Time Elapsed: --- %s seconds" %(time.time() - start_time));
 
     # -- Render with Seriliazed Samples
-    random_scene();
-    #cornell_BoxScene();
+    #random_scene();
+    cornell_BoxScene();
     #gui = ti.GUI("Ray Tracing in One Weekend", res=(image_width, image_height));
     start_time = time.time();
     for i in range(samples_per_pixel):
