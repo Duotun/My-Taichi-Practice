@@ -46,7 +46,7 @@ def shading(color, normal: ti.template()):
     return tm.vec4(inColor, alpha);
 
 
-#assume rays from the image coordinates (camera_pos, considered as well)
+#assume rays from the image coordinates (camera_pos, considered as well)， screenUV
 #assume image is one-unit in the front of camera
 @ti.func  
 def gen_cam_ray(u, v):
